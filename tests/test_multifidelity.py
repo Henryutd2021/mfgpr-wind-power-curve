@@ -107,7 +107,7 @@ def test_wrappers_scale_outputs(small_options):
         assert b.scale == pytest.approx(1000 * a.scale)
         ma, sa = a.predict([0.3, 0.6])
         mb, sb = b.predict([0.3, 0.6])
-        # same scaled problem; the optimiser may stop at slightly different points (round-off)
+        # same scaled problem; the optimizer may stop at slightly different points (round-off)
         np.testing.assert_allclose(mb, 1000 * ma, rtol=5e-3, atol=1e-3)
         np.testing.assert_allclose(sb, 1000 * sa, rtol=5e-3, atol=1e-3)
     with pytest.raises(RuntimeError):

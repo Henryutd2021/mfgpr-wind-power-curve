@@ -22,7 +22,7 @@ flowchart TD
 | Module | Content |
 |---|---|
 | `kernels.py` | `RBF` (Eq. 12) on selected input columns, `Sum`, `Product` (Eq. 11; each kernel instance may appear only once); covariance matrices and their exact derivatives with respect to the log-parameters |
-| `gp.py` | `GaussianProcess` (Eqs. 4–5): marginal likelihood with gradient (trial evaluations leave the fitted parameters unchanged), L-BFGS-B with restarts inside the limits, prediction with or without noise in chunks (parameters changed after fitting are refactorised first); noise models `GaussianNoise` and `LevelNoise` (one variance per fidelity level) |
+| `gp.py` | `GaussianProcess` (Eqs. 4–5): marginal likelihood with gradient (trial evaluations leave the fitted parameters unchanged), L-BFGS-B with restarts inside the limits, prediction with or without noise in chunks (parameters changed after fitting are refactorized first); noise models `GaussianNoise` and `LevelNoise` (one variance per fidelity level) |
 | `multifidelity.py` | `LinearMultiFidelityKernel` and `LinearMultiFidelityGP` (Eq. 6, joint over all levels); `NonlinearMultiFidelityGP` (Eqs. 10–12, Monte Carlo propagation; `predict_components` returns the mixture, `predict` its two moments); `default_rbf` (starting values and length-scale limits); checks of input columns and level indices |
 | `models.py` | the three power-curve estimators behind one interface (`StandardGPR`, `LinearMFGPR`, `NonlinearMFGPR` with `predict_components`, `make_model`), output scaling, `ModelOptions` |
 | `kde.py` | `kde_density` (Gaussian kernel density estimate with one bandwidth per coordinate, see method.md §2.1), `kde_sample`, `scott_bandwidth` |
@@ -42,8 +42,8 @@ flowchart TD
 
 ## Size and run time
 
-- A GP solve costs $O(n^3)$ in the number of training points $n$. The linear model works on $n_{\text{low}} + n_{\text{high}}$ points in one joint matrix; the nonlinear model on $n_{\text{low}}$ and $n_{\text{high}}$ separately.
-- Prediction with the nonlinear model costs $S$ high-level GP predictions (Monte Carlo samples, default 100) per call; memory and time grow linearly with the number of prediction points.
+- A GP solve costs $`O(n^3)`$ in the number of training points $`n`$. The linear model works on $`n_{\text{low}} + n_{\text{high}}`$ points in one joint matrix; the nonlinear model on $`n_{\text{low}}`$ and $`n_{\text{high}}`$ separately.
+- Prediction with the nonlinear model costs $`S`$ high-level GP predictions (Monte Carlo samples, default 100) per call; memory and time grow linearly with the number of prediction points.
 - On a laptop (one process): `examples/minimal.py` (6 turbines, 4 days, 200 + 200 training points, 5 restarts) takes a few seconds; the tests take about one second.
 
 ## Output tables
@@ -65,6 +65,6 @@ Written by `ExperimentResult.save(out_dir)`:
 - kernels: Eq. (12) against a direct formula; gradients against finite differences (single, product and sum kernels); positive semi-definiteness; repeated instances rejected;
 - GP: Eqs. (4)–(5) against a direct solve; gradient of the marginal likelihood; recovery of a smooth function; noise handling; trial likelihood evaluations (including a wrong-length parameter vector) and parameter changes after fitting; optimum inside the limits from a start outside them; chunked prediction; input checks;
 - multi-fidelity: covariance structure of Eq. (6) for two and three levels; joint-likelihood gradient including ρ; recovery of a known ρ; the nonlinear model on the analytic test function of Perdikaris et al. (2017) against the linear and single-fidelity models; deterministic Monte Carlo prediction; mixture components against the returned moments; three levels; input and level checks; scaling invariance;
-- KDE: the density formula by hand, normalisation, Scott's rule, moments of the draws, limits;
+- KDE: the density formula by hand, normalization, Scott's rule, moments of the draws, limits;
 - metrics: Eqs. (13)–(19) by hand; closed form of Eq. (20) against numerical integration; mixture CDF; interval coverage for calibrated forecasts; argument ranges, non-finite inputs and output shapes;
-- data and experiment: schema checks, preparation counts, SDWPF mapping, input round trip, experiment tables, command line, minimal example.
+- data and experiment: schema checks, preparation counts, SDWPF mapping, input round trip, experiment tables, command line (including the default MAPE threshold), minimal example.

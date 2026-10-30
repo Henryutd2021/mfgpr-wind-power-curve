@@ -34,7 +34,7 @@ The complete method, with the paper's equation numbers, is in [docs/method.md](d
 | [`docs/architecture.md`](docs/architecture.md) | data flow, modules, model parameters, size and run time, output tables, tests |
 | [`src/mfgpr_framework/`](src/mfgpr_framework/) | the implementation (NumPy, SciPy, pandas; no other dependency) |
 | [`examples/`](examples/) | `minimal.py` (the experiment design, a few seconds), `probabilistic.py` (intervals and probabilistic metrics), `sensitivity.py` (training size and bandwidth), `benchmark_function.py` (linear versus nonlinear fusion on an analytic test function); all on synthetic data |
-| [`tests/`](tests/) | 53 tests: equations against direct formulas, exact gradients, model behaviour, data checks, experiment, command line |
+| [`tests/`](tests/) | 54 tests: equations against direct formulas, exact gradients, model behaviour, data checks, experiment, command line |
 
 ## Quick start
 
@@ -55,6 +55,8 @@ The command line works on input directories:
 mfgpr-framework synthetic my_inputs/                    # write a synthetic input directory
 mfgpr-framework run my_inputs/ --out-dir outputs/run    # experiment design, result tables
 ```
+
+`run` prints the deterministic metrics averaged over the evaluated turbines. The MAPE (Eq. 17) leaves out records at or below 5 % of the rated power, where the relative error is undefined or very large. `--mape-min-fraction` changes this share, and `--mape-min-actual` sets an absolute threshold in kW instead (see [docs/method.md](docs/method.md#32-deterministic-metrics-eqs-1317)).
 
 In Python:
 

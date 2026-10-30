@@ -3,7 +3,7 @@
 * ``LinearMultiFidelityGP``: the autoregressive scheme of Eq. (6),
       g_t(x) = rho_{t-1} * g_{t-1}(x) + delta_t(x),
   with independent GPs delta_t and constant scaling factors rho. All levels are modelled jointly
-  and every hyperparameter (kernels, rho, one noise variance per level) is fitted by maximising the
+  and every hyperparameter (kernels, rho, one noise variance per level) is fitted by maximizing the
   joint marginal likelihood.
 * ``NonlinearMultiFidelityGP``: the recursive scheme of Eq. (10),
       f_t(x) = g_t(x, f*_{t-1}(x)),
@@ -66,7 +66,7 @@ def default_rbf(X, y, active_dims=None, fixed_variance: bool = False) -> RBF:
 
     Start: variance = var(y), length scale = 20 % of the input range. Limits: the length scale of each
     column stays between the median spacing of its distinct training values and 100 times its range.
-    The lower limit keeps the optimiser away from the degenerate optimum in which a vanishing length
+    The lower limit keeps the optimizer away from the degenerate optimum in which a vanishing length
     scale turns the kernel into white noise.
     """
     X = as_2d(X)

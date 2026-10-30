@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mfgpr-framework"
-version = "1.0.0"
+version = "1.0.1"
 description = "Multi-fidelity Gaussian process regression for probabilistic wind power curves (framework of Li, Feng & Zhang, ASME IDETC 2023)"
 readme = "README.md"
 license = {text = "MIT"}

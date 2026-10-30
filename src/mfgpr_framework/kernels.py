@@ -2,16 +2,16 @@
 
 Every kernel keeps its free parameters in ``theta`` (log variance, log length scales) and returns
 the derivative of its covariance matrix with respect to each of them, so that the marginal
-likelihood can be maximised with exact gradients (``gp.GaussianProcess``).
+likelihood can be maximized with exact gradients (``gp.GaussianProcess``).
 
 Eq. (12) writes the RBF kernel with automatic-relevance-determination weights w_i; here the kernel
-is parameterised by length scales l_i, with w_i = 1 / l_i**2.
+is parameterized by length scales l_i, with w_i = 1 / l_i**2.
 """
 from __future__ import annotations
 
 import numpy as np
 
-LOG_BOUNDS = (-12.0, 12.0)  # bounds on log-parameters during optimisation
+LOG_BOUNDS = (-12.0, 12.0)  # bounds on log-parameters during optimization
 
 
 class Kernel:
@@ -42,7 +42,7 @@ class RBF(Kernel):
     variance, lengthscale : initial values; ``lengthscale`` is a scalar or one value per active column.
     fixed_variance : keep the variance at its initial value (used for the factor c^f of Eq. 11,
         where only the product of two variances is identifiable).
-    lengthscale_bounds : optional (lower, upper) limits on the length scales during optimisation,
+    lengthscale_bounds : optional (lower, upper) limits on the length scales during optimization,
         scalars or one pair of values per active column; default: the generic log bounds.
     """
 

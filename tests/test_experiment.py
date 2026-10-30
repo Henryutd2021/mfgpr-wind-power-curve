@@ -1,3 +1,4 @@
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -52,6 +53,34 @@ def test_command_line(tmp_path, capsys):
     printed = capsys.readouterr().out
     assert "Nonlinear MF-GPR" in printed
     assert len(pd.read_csv(tmp_path / "out" / "deterministic.csv")) == 2 * 3
+
+
+def test_command_line_mape_threshold(tmp_path, capsys):
+    # default: Eq. 17 leaves out records at or below 5 % of the rated power, as examples/minimal.py does
+    assert main(["synthetic", str(tmp_path / "in"), "--turbines", "2", "--days", "1"]) == 0
+    base = ["run", str(tmp_path / "in"), "--n-high", "40", "--n-low", "30", "--restarts", "0",
+            "--n-samples", "10", "--models", "standard_gpr"]
+    rated = float(m.synthetic_power_curve()["power"].max())
+
+    def run(name, *extra):
+        assert main(base + ["--out-dir", str(tmp_path / name), *extra]) == 0
+        cfg = json.loads((tmp_path / name / "run.json").read_text())["config"]
+        mape = pd.read_csv(tmp_path / name / "deterministic.csv")["mape_percent"]
+        return cfg["mape_min_actual"], mape, capsys.readouterr().out
+
+    threshold, mape_default, printed = run("default")
+    assert threshold == pytest.approx(0.05 * rated)
+    assert "5 % of the rated power" in printed
+    assert run("fraction", "--mape-min-fraction", "0.05")[0] == pytest.approx(threshold)
+    assert run("fraction10", "--mape-min-fraction", "0.1")[0] == pytest.approx(0.1 * rated)
+    zero, mape_zero, _ = run("absolute", "--mape-min-actual", "0")
+    assert zero == 0.0
+    assert run("absolute50", "--mape-min-actual", "50")[0] == 50.0
+    assert (mape_default < mape_zero).all()  # records near zero power inflate the relative error
+    for bad in (["--mape-min-fraction", "0.1", "--mape-min-actual", "5"], ["--mape-min-fraction", "1"],
+                ["--mape-min-actual", "-1"]):
+        with pytest.raises(SystemExit):
+            main(base + ["--out-dir", str(tmp_path / "bad"), *bad])
 
 
 def test_minimal_example_runs():

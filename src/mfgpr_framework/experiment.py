@@ -37,7 +37,7 @@ class ExperimentConfig:
     turbines: tuple | None = None        # turbines to evaluate; None: see n_turbines
     n_turbines: int | None = None        # random selection of this many turbines; None: all
     probabilistic_turbine: object = None  # turbine for the probabilistic evaluation; None: first selected
-    x_max: float | None = None           # normaliser of Eqs. 14 and 16; None: maximum of the theoretical curve
+    x_max: float | None = None           # normalizer of Eqs. 14 and 16; None: maximum of the theoretical curve
     n_bins: int = 10                     # categories of Eq. 19: equal bins between 0 and x_max
     mape_min_actual: float = 0.0         # Eq. 17 uses records with |power| above this value (kW)
     quantiles: tuple = tuple(np.round(np.arange(0.05, 0.96, 0.05), 2))

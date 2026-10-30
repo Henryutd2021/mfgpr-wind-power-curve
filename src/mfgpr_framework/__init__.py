@@ -13,7 +13,7 @@ from .models import KINDS, LABELS, LinearMFGPR, ModelOptions, NonlinearMFGPR, St
 from .multifidelity import LinearMultiFidelityGP, LinearMultiFidelityKernel, NonlinearMultiFidelityGP
 from .synthetic import synthetic_farm, synthetic_power_curve
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __all__ = [
     "DataError", "from_sdwpf", "low_fidelity_points", "prepare_records", "read_inputs",
     "validate_power_curve", "validate_records", "write_inputs",

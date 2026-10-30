@@ -1,6 +1,6 @@
 # Experiment design
 
-How the paper's case study (Sections 3–4) is organised, and how each part is expressed with the framework. The repository does not contain the case-study data or its results; for those, see the paper.
+How the paper's case study (Sections 3–4) is organized, and how each part is expressed with the framework. The repository does not contain the case-study data or its results; for those, see the paper.
 
 ## The case study
 
@@ -22,6 +22,7 @@ records, curve = m.read_inputs("my_inputs/")          # see data_pipeline.md
 config = m.ExperimentConfig(
     n_high=200, n_low=200,                            # training data, Fig. 1
     n_turbines=9, seed=1,                             # random turbines for the deterministic evaluation
+    mape_min_actual=0.05 * curve["power"].max(),      # Eq. 17 without near-zero power (method.md)
     model_options=m.ModelOptions(restarts=10, n_samples=100),
 )
 result = m.run_experiment(records, curve, config)

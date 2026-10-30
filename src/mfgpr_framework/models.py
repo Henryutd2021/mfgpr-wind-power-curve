@@ -29,7 +29,7 @@ LABELS = {"nonlinear_mf": "Nonlinear MF-GPR", "linear_mf": "Linear MF-GPR", "sta
 class ModelOptions:
     """Fitting options shared by the three models."""
 
-    restarts: int = 5            # random restarts of the marginal-likelihood optimisation
+    restarts: int = 5            # random restarts of the marginal-likelihood optimization
     n_samples: int = 100         # Monte-Carlo samples (nonlinear model only)
     noise_variance: float = 1e-2  # starting noise variance, as a fraction of var(y)
     output_scale: float | None = None  # None: pooled standard deviation of the training outputs

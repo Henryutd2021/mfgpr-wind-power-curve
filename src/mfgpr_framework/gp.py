@@ -110,7 +110,7 @@ class GaussianProcess:
         self.y = None
         self._chol = None
         self._alpha = None
-        self._factor_theta = None  # parameters at the last factorisation
+        self._factor_theta = None  # parameters at the last factorization
 
     # parameters ---------------------------------------------------------------------------------
     @property
@@ -170,7 +170,7 @@ class GaussianProcess:
 
     # fitting ------------------------------------------------------------------------------------
     def fit(self, X, y, restarts: int = 5, seed=None, optimize: bool = True):
-        """Store the training data and maximise the marginal likelihood from ``restarts`` + 1 starts.
+        """Store the training data and maximize the marginal likelihood from ``restarts`` + 1 starts.
 
         The first start is the current ``theta`` (moved inside the bounds); the others add
         standard-normal noise to it (log-parameters on the log scale, scaling factors on their own
@@ -214,7 +214,7 @@ class GaussianProcess:
     def predict(self, Xnew, include_noise: bool = False, chunk: int = 2048):
         """Posterior mean and variance (Eqs. 4-5) at ``Xnew``; optionally plus the noise variance.
 
-        If the parameters were changed after fitting, the covariance is factorised again first.
+        If the parameters were changed after fitting, the covariance is factorized again first.
         Rows are processed in chunks of ``chunk`` to bound memory.
         """
         if self.X is None:
