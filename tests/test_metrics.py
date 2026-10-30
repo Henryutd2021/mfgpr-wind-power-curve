@@ -86,3 +86,16 @@ def test_mixture_cdf():
     np.testing.assert_allclose(two[0], 0.5 * (norm.cdf(z) + norm.cdf(z - 2.0)))
     with pytest.raises(ValueError):
         mt.mixture_cdf(z, [[0.0]], [[0.0]])
+
+
+def test_quantile_shape_and_non_finite_inputs():
+    q = mt.gaussian_quantile(np.zeros((2, 1)), np.ones((2, 1)), 0.9)
+    assert q.shape == (2, 1)
+    with pytest.raises(ValueError):
+        mt.gaussian_quantile([np.nan, 0.0], [1.0, 1.0], 0.5)
+    with pytest.raises(ValueError):
+        mt.pinball_loss([np.nan, 1.0], [0.0, 0.0], 0.5)
+    with pytest.raises(ValueError):
+        mt.bin_probabilities([0.0], [1.0], [0.0, np.nan, 2.0])
+    with pytest.raises(ValueError):
+        mt.rmse([1.0, np.inf], [1.0, 1.0])

@@ -142,8 +142,11 @@ class GaussianProcess:
         """
         if theta is not None:
             saved = self.theta
-            self.theta = theta
+            theta = np.asarray(theta, dtype=float).ravel()
+            if theta.shape != saved.shape:
+                raise ValueError(f"theta must have {len(saved)} values")
             try:
+                self.theta = theta
                 return self.neg_log_marginal_likelihood(None, X, y, gradient)
             finally:
                 self.theta = saved
@@ -216,6 +219,8 @@ class GaussianProcess:
         """
         if self.X is None:
             raise RuntimeError("fit the model before predicting")
+        if isinstance(chunk, bool) or not isinstance(chunk, (int, np.integer)) or chunk < 1:
+            raise ValueError("chunk must be a positive integer")
         if self._chol is None or not np.array_equal(self.theta, self._factor_theta):
             self._factorize()
         Xnew = np.asarray(Xnew, dtype=float)

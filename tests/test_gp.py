@@ -87,9 +87,32 @@ def test_changed_parameters_are_refactorised_before_predicting():
 def test_optimum_respects_bounds_for_tiny_outputs():
     X, _ = _data()
     y = 1e-9 * np.sin(X[:, 0])
-    gp = GaussianProcess(RBF([0], 1.0, 1.0), GaussianNoise(1.0)).fit(X, y, restarts=1, seed=0)
+    # start outside the limits, at values the tiny outputs favour over any point inside them
+    gp = GaussianProcess(RBF([0], variance=1e-18, lengthscale=1.0), GaussianNoise(1e-18))
+    assert gp.theta[0] < gp.bounds()[0][0]
+    gp.fit(X, y, restarts=0, seed=0)
     for t, (lo, hi) in zip(gp.theta, gp.bounds()):
         assert lo - 1e-12 <= t <= hi + 1e-12
+
+
+def test_trial_likelihood_with_wrong_length_keeps_parameters():
+    X, y = _data()
+    gp = GaussianProcess(RBF([0], 1.0, 1.0), GaussianNoise(0.1)).fit(X, y, optimize=False)
+    theta = gp.theta.copy()
+    with pytest.raises(ValueError):
+        gp.neg_log_marginal_likelihood(theta[:-1] + 1)
+    np.testing.assert_array_equal(gp.theta, theta)
+
+
+def test_chunked_prediction():
+    X, y = _data()
+    gp = GaussianProcess(RBF([0], 1.0, 1.0), GaussianNoise(0.1)).fit(X, y, optimize=False)
+    Xs = np.linspace(0, 6, 37).reshape(-1, 1)
+    for a, b in zip(gp.predict(Xs, chunk=5), gp.predict(Xs)):
+        np.testing.assert_allclose(a, b, rtol=1e-12, atol=1e-14)
+    for bad in (0, -1, 2.5):
+        with pytest.raises(ValueError):
+            gp.predict(Xs, chunk=bad)
 
 
 def test_prediction_input_checks():

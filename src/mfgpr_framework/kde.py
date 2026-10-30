@@ -1,8 +1,8 @@
 """Kernel density estimation (Section 2.1, Eqs. 1-3) and sampling of high-fidelity training points.
 
-Eq. (1) estimates a density by placing a Gaussian kernel of bandwidth h on every record. For
-(wind speed, power) records the framework uses the product form of Eqs. (1)-(2) with one bandwidth
-per coordinate:
+Eq. (1) estimates a density by placing a Gaussian kernel on every record. For (wind speed, power)
+records the framework uses the Gaussian kernel density estimate with one bandwidth per coordinate,
+h_k being the standard deviation of the Gaussian kernel in coordinate k:
 
     f_h(z) = 1/n * sum_i prod_k (1/h_k) * phi((z_k - z_ik) / h_k),
 
@@ -46,7 +46,7 @@ def scott_bandwidth(points) -> np.ndarray:
 
 
 def kde_density(points, z, bandwidth=None) -> np.ndarray:
-    """Estimated density (Eqs. 1-3, product form) at the rows of ``z``."""
+    """Kernel density estimate (formula in the module docstring) at the rows of ``z``."""
     p = _as_points(points)
     z = np.asarray(z, dtype=float)
     z = z.reshape(-1, p.shape[1])

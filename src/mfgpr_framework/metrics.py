@@ -19,6 +19,8 @@ def _pair(actual, predicted):
     p = np.asarray(predicted, dtype=float).ravel()
     if a.shape != p.shape or a.size == 0:
         raise ValueError("actual and predicted must have the same, non-zero length")
+    if not (np.all(np.isfinite(a)) and np.all(np.isfinite(p))):
+        raise ValueError("actual and predicted values must be finite")
     return a, p
 
 
@@ -75,7 +77,7 @@ def deterministic_metrics(actual, predicted, x_max: float, min_actual: float = 0
 def _gaussian(y, mean, std):
     y = np.asarray(y, dtype=float).ravel()
     mean = np.asarray(mean, dtype=float).ravel()
-    std = _std(std)
+    std = _std(std).ravel()
     if not (y.shape == mean.shape == std.shape) or y.size == 0:
         raise ValueError("y, mean and std must have the same, non-zero length")
     if not (np.all(np.isfinite(y)) and np.all(np.isfinite(mean))):
@@ -84,7 +86,7 @@ def _gaussian(y, mean, std):
 
 
 def _std(std):
-    std = np.asarray(std, dtype=float).ravel()
+    std = np.asarray(std, dtype=float)
     if not np.all(np.isfinite(std)) or np.any(std <= 0):
         raise ValueError("std must be positive and finite")
     return std
@@ -99,7 +101,11 @@ def _probability(p, name):
 def gaussian_quantile(mean, std, tau):
     """tau-quantile of N(mean, std**2)."""
     tau = _probability(tau, "tau")
-    return np.asarray(mean, dtype=float) + _std(std) * norm.ppf(tau)
+    mean = np.asarray(mean, dtype=float)
+    std = _std(std)
+    if mean.shape != std.shape or not np.all(np.isfinite(mean)):
+        raise ValueError("mean must be finite and have the shape of std")
+    return mean + std * norm.ppf(tau)
 
 
 def pinball_loss(y, q_pred, tau: float) -> float:
@@ -122,11 +128,11 @@ def bin_probabilities(mean, std, edges) -> np.ndarray:
     The two outer bins absorb the tails, so each row sums to 1.
     """
     mean = np.asarray(mean, dtype=float).ravel()
-    std = _std(std)
+    std = _std(std).ravel()
     if mean.shape != std.shape or not np.all(np.isfinite(mean)):
         raise ValueError("mean must be finite and match std")
     edges = np.asarray(edges, dtype=float)
-    if edges.ndim != 1 or len(edges) < 3 or np.any(np.diff(edges) <= 0):
+    if edges.ndim != 1 or len(edges) < 3 or not np.all(np.isfinite(edges)) or np.any(np.diff(edges) <= 0):
         raise ValueError("edges must be increasing with at least three values")
     cdf = norm.cdf((edges[None, 1:-1] - mean[:, None]) / std[:, None])
     cdf = np.hstack([np.zeros((len(mean), 1)), cdf, np.ones((len(mean), 1))])
