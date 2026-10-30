@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the paper below (preferred citation) and this software."
+title: "MF-GPR framework: multi-fidelity Gaussian process regression for probabilistic wind power curves"
+version: "1.0.0"
+repository-code: "https://github.com/Henryutd2021/mfgpr-wind-power-curve"
+license: MIT
+authors:
+  - family-names: Li
+    given-names: Honglin
+    orcid: "https://orcid.org/0000-0002-8405-3032"
+keywords:
+  - wind energy
+  - power curve
+  - Gaussian process regression
+  - multi-fidelity modeling
+  - kernel density estimation
+  - uncertainty quantification
+preferred-citation:
+  type: conference-paper
+  authors:
+    - family-names: Li
+      given-names: Honglin
+      orcid: "https://orcid.org/0000-0002-8405-3032"
+    - family-names: Feng
+      given-names: Cong
+    - family-names: Zhang
+      given-names: Jie
+  title: "A Multi-Fidelity Gaussian Process Regression Method for Probabilistic Wind Farm Power Curve Estimation"
+  collection-title: "Proceedings of the ASME 2023 International Design Engineering Technical Conferences and Computers and Information in Engineering Conference (IDETC/CIE 2023), Volume 3A: 49th Design Automation Conference (DAC)"
+  publisher:
+    name: "American Society of Mechanical Engineers"
+  conference:
+    name: "ASME 2023 International Design Engineering Technical Conferences and Computers and Information in Engineering Conference"
+    city: Boston
+    region: Massachusetts
+    country: US
+    date-start: 2023-08-20
+    date-end: 2023-08-23
+  number: "V03AT03A034"
+  year: 2023
+  doi: 10.1115/DETC2023-114762
