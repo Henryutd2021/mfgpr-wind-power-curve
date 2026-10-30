@@ -38,20 +38,30 @@ flowchart LR
 
 For records $x_1,\dots,x_n$, the density is estimated by
 
-$$\hat f_h(x) = \frac{1}{nh}\sum_{i=1}^{n} K_h\!\left(\frac{x-x_i}{h}\right) \tag{1}$$
+$$
+\hat f_h(x) = \frac{1}{nh}\sum_{i=1}^{n} K_h\!\left(\frac{x-x_i}{h}\right) \tag{1}
+$$
 
 with the Gaussian kernel and the standard normal density
 
-$$K_h(x) = \frac{1}{h}\,\phi\!\left(\frac{x}{h}\right) \tag{2}$$
+$$
+K_h(x) = \frac{1}{h}\,\phi\!\left(\frac{x}{h}\right) \tag{2}
+$$
 
-$$\phi(x) = \frac{e^{-x^2/2}}{\sqrt{2\pi}} \tag{3}$$
+$$
+\phi(x) = \frac{e^{-x^2/2}}{\sqrt{2\pi}} \tag{3}
+$$
 
 The bandwidth $h$ controls the smoothness of the estimate.
 
 **In the framework** (`kde.py`):
 
-- The records are pairs $z = (\text{wind speed}, \text{power})$. Eqs. (1)–(2) are applied in product form with one bandwidth per coordinate:
-  $\hat f_h(z) = \frac{1}{n}\sum_i \prod_k \frac{1}{h_k}\phi\!\left(\frac{z_k - z_{ik}}{h_k}\right)$ (`kde_density`).
+- The records are pairs $z = (\text{wind speed}, \text{power})$. The framework uses the Gaussian kernel density estimate with one bandwidth per coordinate, where $h_k$ is the standard deviation of the Gaussian kernel in coordinate $k$ (`kde_density`):
+
+  $$
+  \hat f_h(z) = \frac{1}{n}\sum_{i=1}^{n} \prod_{k} \frac{1}{h_k}\,\phi\!\left(\frac{z_k - z_{ik}}{h_k}\right)
+  $$
+
 - Drawing from $\hat f_h$: choose a record uniformly at random and add Gaussian noise with standard deviation $h_k$ to coordinate $k$ (`kde_sample`). The draws follow the density of the data, so dense regions of the scatter are represented in proportion and sparse outliers rarely.
 - Default bandwidth: Scott's rule per coordinate, $h_k = \sigma_k\, n^{-1/(d+4)}$ (`scott_bandwidth`). Any scalar or per-coordinate value can be given.
 - Optional limits reject draws outside physical ranges, for example negative speed or power (`lower`, `upper`).
@@ -60,9 +70,13 @@ The bandwidth $h$ controls the smoothness of the estimate.
 
 A Gaussian process prior with zero mean and covariance function $c(x,x';\theta)$ is placed on the unknown function $f$. Observations are $y_i = f(x_i) + \varepsilon_i$ with Gaussian noise of variance $\sigma_n^2$. With $C_{ij} = c(x_i,x_j;\theta)$ for the training inputs and $c_*$ the covariances between a new input $x$ and the training inputs, the posterior mean and variance are
 
-$$\hat f(x) = c_*^{\top}\left(C+\sigma_n^2 I\right)^{-1} y \tag{4}$$
+$$
+\hat f(x) = c_*^{\top}\left(C+\sigma_n^2 I\right)^{-1} y \tag{4}
+$$
 
-$$\operatorname{Var}[\hat f(x)] = c(x,x) - c_*^{\top}\left(C+\sigma_n^2 I\right)^{-1} c_* \tag{5}$$
+$$
+\operatorname{Var}[\hat f(x)] = c(x,x) - c_*^{\top}\left(C+\sigma_n^2 I\right)^{-1} c_* \tag{5}
+$$
 
 **In the framework** (`gp.py`, `GaussianProcess`):
 
@@ -77,7 +91,9 @@ $$\operatorname{Var}[\hat f(x)] = c(x,x) - c_*^{\top}\left(C+\sigma_n^2 I\right)
 
 Levels $t = 0,\dots,T-1$ are ordered from the lowest to the highest fidelity. Each level is the scaled previous level plus an independent GP:
 
-$$g_t(x) = \rho\, g_{t-1}(x) + \delta_t(x) \tag{6}$$
+$$
+g_t(x) = \rho\, g_{t-1}(x) + \delta_t(x) \tag{6}
+$$
 
 $\rho$ measures the correlation between the levels, and $\delta_t \sim \mathcal{GP}(\mu_{\delta_t}, c_t)$.
 
@@ -93,11 +109,17 @@ $\rho$ measures the correlation between the levels, and $\delta_t \sim \mathcal{
 
 Section 2.3 also reviews the family of surrogates that combine $M$ low-fidelity models $f_1,\dots,f_M$ with a high-fidelity model $f_{M+1}$ in a weighted sum with an adjustment term:
 
-$$\hat f(x) = \sum_{m=1}^{M} w_m(x) f_m(x) + \epsilon(x) \tag{7}$$
+$$
+\hat f(x) = \sum_{m=1}^{M} w_m(x) f_m(x) + \epsilon(x) \tag{7}
+$$
 
-$$w_m(x) = \frac{\omega_m(x)}{\sum_{i=1}^{M}\omega_i(x)} \tag{8}$$
+$$
+w_m(x) = \frac{\omega_m(x)}{\sum_{i=1}^{M}\omega_i(x)} \tag{8}
+$$
 
-$$\omega_m(x) = \frac{\lVert f_m(x) - f_{M+1}(x)\rVert^2}{\sigma^2_{f_{M+1}}} \tag{9}$$
+$$
+\omega_m(x) = \frac{\lVert f_m(x) - f_{M+1}(x)\rVert^2}{\sigma^2_{f_{M+1}}} \tag{9}
+$$
 
 The case study compares the models of Eq. (6) and Eqs. (10)–(11); the framework implements those two.
 
@@ -105,15 +127,21 @@ The case study compares the models of Eq. (6) and Eqs. (10)–(11); the framewor
 
 When the levels are not linearly related, the GP prior of the previous level in Eq. (6) is replaced by its posterior $f_{*t-1}$, and level $t$ becomes a GP over the joint input $(x, f_{*t-1}(x))$:
 
-$$f_t(x) = g_t\big(x, f_{*t-1}(x)\big) \tag{10}$$
+$$
+f_t(x) = g_t\big(x, f_{*t-1}(x)\big) \tag{10}
+$$
 
 with $g_t \sim \mathcal{GP}\big(0, c_t((x, f_{*t-1}(x)), (x', f_{*t-1}(x'));\theta_t)\big)$. The covariance is structured to reflect the autoregressive form:
 
-$$c_t^{g} = c_t^{\rho}(x,x';\theta_t^{\rho})\cdot c_t^{f}\big(f_{*t-1}(x), f_{*t-1}(x');\theta_t^{f}\big) + c_t^{\delta}(x,x';\theta_t^{\delta}) \tag{11}$$
+$$
+c_t^{g} = c_t^{\rho}(x,x';\theta_t^{\rho})\cdot c_t^{f}\big(f_{*t-1}(x), f_{*t-1}(x');\theta_t^{f}\big) + c_t^{\delta}(x,x';\theta_t^{\delta}) \tag{11}
+$$
 
 All kernels are squared-exponential (radial basis function) kernels with automatic relevance determination:
 
-$$c_t(x,x';\theta_t) = \sigma_t^2 \exp\!\left(-\frac12\sum_{i=1}^{d} w_{i,t}\,(x_i - x_i')^2\right) \tag{12}$$
+$$
+c_t(x,x';\theta_t) = \sigma_t^2 \exp\!\left(-\frac12\sum_{i=1}^{d} w_{i,t}\,(x_i - x_i')^2\right) \tag{12}
+$$
 
 **In the framework** (`multifidelity.py`, `NonlinearMultiFidelityGP`; `kernels.py`):
 
@@ -129,29 +157,45 @@ $$c_t(x,x';\theta_t) = \sigma_t^2 \exp\!\left(-\frac12\sum_{i=1}^{d} w_{i,t}\,(x
 
 For predictions $\hat x_i$ and actual values $x_i$, $i = 1,\dots,n$ (`metrics.py`):
 
-$$\mathrm{RMSE} = \sqrt{\frac{\sum_{i=1}^{n}(\hat x_i - x_i)^2}{n}} \tag{13}$$
+$$
+\mathrm{RMSE} = \sqrt{\frac{\sum_{i=1}^{n}(\hat x_i - x_i)^2}{n}} \tag{13}
+$$
 
-$$\mathrm{NRMSE} = \frac{1}{x_{\max}}\sqrt{\frac{\sum_{i=1}^{n}(\hat x_i - x_i)^2}{n}} \tag{14}$$
+$$
+\mathrm{NRMSE} = \frac{1}{x_{\max}}\sqrt{\frac{\sum_{i=1}^{n}(\hat x_i - x_i)^2}{n}} \tag{14}
+$$
 
-$$\mathrm{MAE} = \frac1n\sum_{i=1}^{n}\lvert\hat x_i - x_i\rvert \tag{15}$$
+$$
+\mathrm{MAE} = \frac1n\sum_{i=1}^{n}\lvert\hat x_i - x_i\rvert \tag{15}
+$$
 
-$$\mathrm{NMAE} = \frac1n\sum_{i=1}^{n}\frac{\lvert\hat x_i - x_i\rvert}{x_{\max}} \tag{16}$$
+$$
+\mathrm{NMAE} = \frac1n\sum_{i=1}^{n}\frac{\lvert\hat x_i - x_i\rvert}{x_{\max}} \tag{16}
+$$
 
-$$\mathrm{MAPE} = \frac{100\%}{n}\sum_{i=1}^{n}\left\lvert\frac{\hat x_i - x_i}{x_i}\right\rvert \tag{17}$$
+$$
+\mathrm{MAPE} = \frac{100\%}{n}\sum_{i=1}^{n}\left\lvert\frac{\hat x_i - x_i}{x_i}\right\rvert \tag{17}
+$$
 
 ## 3.3 Probabilistic metrics, Eqs. (18)–(20)
 
 **Pinball loss** for the quantile $\tau$ (`pinball_loss`, `mean_pinball_loss`):
 
-$$L_\tau(y,\hat y) = \begin{cases}(y-\hat y)\,\tau, & y \ge \hat y\\ (\hat y - y)(1-\tau), & y < \hat y\end{cases} \tag{18}$$
+$$
+L_\tau(y,\hat y) = \begin{cases}(y-\hat y)\,\tau, & y \ge \hat y\\ (\hat y - y)(1-\tau), & y < \hat y\end{cases} \tag{18}
+$$
 
 **Sharpness** for $N$ forecast samples with $M$ forecast probabilities each, where $\bar p_j$ is the average probability of category $j$ (`sharpness`):
 
-$$S = \frac1N\sum_{i=1}^{N}\sum_{j=1}^{M}(\hat p_{ij} - \bar p_j)^2 \tag{19}$$
+$$
+S = \frac1N\sum_{i=1}^{N}\sum_{j=1}^{M}(\hat p_{ij} - \bar p_j)^2 \tag{19}
+$$
 
 **Reliability** for observations $Y_i$ and forecast CDFs $\hat F_i$ (`reliability_gaussian`, `reliability_numeric`):
 
-$$Re = \frac1N\sum_{i=1}^{N}\int_{-\infty}^{\infty}\big[\hat F_i(z) - \mathbb{I}(Y_i \le z)\big]^2\,dP(z) \tag{20}$$
+$$
+Re = \frac1N\sum_{i=1}^{N}\int_{-\infty}^{\infty}\big[\hat F_i(z) - \mathbb{I}(Y_i \le z)\big]^2\,dP(z) \tag{20}
+$$
 
 **Interval diagnostics** (`interval_width`, `interval_coverage`, `interval_curves`): for a list of nominal proportions $\alpha$, the mean width of the central $\alpha$ prediction intervals and the share of observations inside them. These are the curves over nominal proportions used to compare the models' probabilistic estimates.
 
@@ -159,12 +203,16 @@ $$Re = \frac1N\sum_{i=1}^{N}\int_{-\infty}^{\infty}\big[\hat F_i(z) - \mathbb{I}
 
 - **Units:** wind speed in m/s, power in kW. NRMSE and NMAE are dimensionless (fractions of $x_{\max}$).
 - **Output scaling:** before fitting, all outputs are divided by one common scale $s$ (default: the standard deviation of all training outputs pooled); predictions are multiplied back (`ModelOptions.output_scale`). The prior mean stays zero, as in Eq. (4). Inputs are not scaled.
-- **Starting values and limits of the hyperparameters** (`multifidelity.default_rbf`):
-  - start: kernel variance = variance of the outputs; length scale = 20 % of the input range; noise variance = 1 % of the output variance;
+- **Starting values and limits of the hyperparameters** (`multifidelity.default_rbf`, `ModelOptions`):
+  - kernels: variance = variance of the level's outputs, except $c_t^{\delta}$ of Eq. (11), which starts at 1 % of it (its contribution starts small); length scale = 20 % of the input range;
+  - noise: variance = `noise_variance` × variance of the level's outputs (default 1 %);
+  - scaling factors $\rho$ of Eq. (6): start at 1, limits $[-10, 10]$;
   - each length scale stays between the median spacing of the distinct training inputs and 100 times their range. The lower limit keeps the optimiser away from the degenerate optimum in which the kernel turns into white noise;
-  - log-variances stay within $[-12, 12]$ and noise variances within $[10^{-8}, 10^{4}]$ (in scaled units).
-- **Optimisation:** L-BFGS-B with exact gradients from the current values, plus `restarts` starts perturbed by standard-normal noise on the log scale; the best optimum is kept. `seed` makes restarts and Monte Carlo numbers repeatable.
+  - log-variances stay within $[-12, 12]$ and noise variances within $[10^{-8}, 10^{4}]$ (in scaled units);
+  - a jitter of $10^{-8}$ is added to the diagonal of every covariance matrix.
+- **Optimisation:** L-BFGS-B with exact gradients. The first start is the starting values above; each of the `restarts` further starts adds standard-normal noise to them (log-parameters on the log scale, $\rho$ on its own scale), and every start is moved inside the limits. The best optimum is kept. `seed` makes restarts and Monte Carlo numbers repeatable.
 - **Predictions:** `PowerCurveModel.predict` returns the mean and the standard deviation in kW. By default the noise variance of the highest level is included (distribution of a measured value); `include_noise=False` gives the latent curve, Eq. (5).
+- **Predictive distribution of the nonlinear model:** Monte Carlo propagation gives an equal-weight mixture of $S$ Gaussians, available through `NonlinearMFGPR.predict_components`. `predict` returns its first two moments. The probabilistic metrics of the experiment (Eqs. 18–20 and the interval curves) treat every model's prediction as a Gaussian with this mean and standard deviation (a moment-matched Gaussian for the nonlinear model). `metrics.mixture_cdf` with `reliability_numeric` evaluates Eq. (20) on the mixture itself.
 - **$x_{\max}$ in Eqs. (14) and (16):** a value given by the user; the experiment default is the maximum of the theoretical curve (the rated power).
 - **Eq. (17):** records with $\lvert x_i\rvert \le$ `min_actual` are left out (default 0, which leaves out only $x_i = 0$, where the relative error is undefined).
 - **Eq. (18):** the predictive quantile is $\hat y_\tau = \mu + \sigma\,\Phi^{-1}(\tau)$ of the Gaussian predictive distribution; the loss is averaged over records and over a grid of $\tau$ (default 0.05, 0.10, …, 0.95).

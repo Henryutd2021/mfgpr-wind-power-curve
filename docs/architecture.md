@@ -21,12 +21,12 @@ flowchart TD
 
 | Module | Content |
 |---|---|
-| `kernels.py` | `RBF` (Eq. 12) on selected input columns, `Sum`, `Product` (Eq. 11); covariance matrices and their exact derivatives with respect to the log-parameters |
-| `gp.py` | `GaussianProcess` (Eqs. 4–5): marginal likelihood with gradient, L-BFGS-B with restarts, prediction with or without noise; noise models `GaussianNoise` and `LevelNoise` (one variance per fidelity level) |
-| `multifidelity.py` | `LinearMultiFidelityKernel` and `LinearMultiFidelityGP` (Eq. 6, joint over all levels); `NonlinearMultiFidelityGP` (Eqs. 10–12, Monte Carlo propagation); `default_rbf` (starting values and length-scale limits) |
-| `models.py` | the three power-curve estimators behind one interface (`StandardGPR`, `LinearMFGPR`, `NonlinearMFGPR`, `make_model`), output scaling, `ModelOptions` |
+| `kernels.py` | `RBF` (Eq. 12) on selected input columns, `Sum`, `Product` (Eq. 11; each kernel instance may appear only once); covariance matrices and their exact derivatives with respect to the log-parameters |
+| `gp.py` | `GaussianProcess` (Eqs. 4–5): marginal likelihood with gradient (trial evaluations leave the fitted parameters unchanged), L-BFGS-B with restarts inside the limits, prediction with or without noise in chunks (parameters changed after fitting are refactorised first); noise models `GaussianNoise` and `LevelNoise` (one variance per fidelity level) |
+| `multifidelity.py` | `LinearMultiFidelityKernel` and `LinearMultiFidelityGP` (Eq. 6, joint over all levels); `NonlinearMultiFidelityGP` (Eqs. 10–12, Monte Carlo propagation; `predict_components` returns the mixture, `predict` its two moments); `default_rbf` (starting values and length-scale limits); checks of input columns and level indices |
+| `models.py` | the three power-curve estimators behind one interface (`StandardGPR`, `LinearMFGPR`, `NonlinearMFGPR` with `predict_components`, `make_model`), output scaling, `ModelOptions` |
 | `kde.py` | `kde_density` (Eqs. 1–3, product form), `kde_sample`, `scott_bandwidth` |
-| `metrics.py` | Eqs. 13–20; Gaussian quantiles; bin probabilities; interval width and coverage |
+| `metrics.py` | Eqs. 13–20; Gaussian quantiles; bin probabilities; interval width and coverage; CDF of Gaussian mixtures (`mixture_cdf`); checks of the argument ranges |
 | `data.py` | input schemas, checks (`DataError`), preparation rules, low-fidelity points, SDWPF column mapping, input directory read/write |
 | `experiment.py` | `ExperimentConfig`, `run_experiment`, `ExperimentResult` (tables, summary, `save`) |
 | `synthetic.py` | invented turbine type and wind farm for examples and tests |
@@ -62,9 +62,9 @@ Written by `ExperimentResult.save(out_dir)`:
 
 ## Tests (`tests/`)
 
-- kernels: Eq. (12) against a direct formula; gradients against finite differences (single, product and sum kernels); positive semi-definiteness;
-- GP: Eqs. (4)–(5) against a direct solve; gradient of the marginal likelihood; recovery of a smooth function; noise handling; errors;
-- multi-fidelity: covariance structure of Eq. (6) for two and three levels; joint-likelihood gradient including ρ; recovery of a known ρ; the nonlinear model on the analytic test function of Perdikaris et al. (2017) against the linear and single-fidelity models; deterministic Monte Carlo prediction; three levels; scaling invariance;
-- KDE: Eqs. (1)–(3) by hand, normalisation, Scott's rule, moments of the draws, limits;
-- metrics: Eqs. (13)–(19) by hand; closed form of Eq. (20) against numerical integration; interval coverage for calibrated forecasts;
+- kernels: Eq. (12) against a direct formula; gradients against finite differences (single, product and sum kernels); positive semi-definiteness; repeated instances rejected;
+- GP: Eqs. (4)–(5) against a direct solve; gradient of the marginal likelihood; recovery of a smooth function; noise handling; trial likelihood evaluations and parameter changes after fitting; optimum inside the limits for tiny outputs; input checks;
+- multi-fidelity: covariance structure of Eq. (6) for two and three levels; joint-likelihood gradient including ρ; recovery of a known ρ; the nonlinear model on the analytic test function of Perdikaris et al. (2017) against the linear and single-fidelity models; deterministic Monte Carlo prediction; mixture components against the returned moments; three levels; input and level checks; scaling invariance;
+- KDE: the density formula by hand, normalisation, Scott's rule, moments of the draws, limits;
+- metrics: Eqs. (13)–(19) by hand; closed form of Eq. (20) against numerical integration; mixture CDF; interval coverage for calibrated forecasts; argument ranges;
 - data and experiment: schema checks, preparation counts, SDWPF mapping, input round trip, experiment tables, command line, minimal example.

@@ -6,7 +6,9 @@
 3. Low-fidelity training data: ``n_low`` points of the theoretical power curve.
 4. Fit the models (default: nonlinear MF-GPR, linear MF-GPR, standard GPR).
 5. Deterministic evaluation (Eqs. 13-17) on the records of each selected turbine.
-6. Probabilistic evaluation (Eqs. 18-20, interval width and coverage) on one selected turbine.
+6. Probabilistic evaluation (Eqs. 18-20, interval width and coverage) on one selected turbine, with
+   each model's predictive mean and standard deviation (for the nonlinear model: the first two
+   moments of its Monte-Carlo mixture) as a Gaussian predictive distribution.
 
 ``run_experiment`` returns all tables; ``ExperimentResult.save`` writes them as CSV files.
 """

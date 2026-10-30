@@ -30,6 +30,23 @@ def as_2d(x) -> np.ndarray:
     return x.reshape(-1, 1) if x.ndim == 1 else x
 
 
+def _check_inputs(X, n_inputs: int) -> np.ndarray:
+    X = as_2d(X)
+    if X.ndim != 2 or X.shape[1] != n_inputs:
+        raise ValueError(f"inputs must have {n_inputs} column(s)")
+    if not np.all(np.isfinite(X)):
+        raise ValueError("inputs must be finite")
+    return X
+
+
+def _check_level(level, n_levels: int) -> int:
+    if level is None:
+        return n_levels - 1
+    if isinstance(level, bool) or not isinstance(level, (int, np.integer)) or not 0 <= level < n_levels:
+        raise ValueError(f"level must be an integer between 0 and {n_levels - 1}")
+    return int(level)
+
+
 def _check_levels(levels):
     if len(levels) < 2:
         raise ValueError("a multi-fidelity model needs at least two levels")
@@ -195,8 +212,8 @@ class LinearMultiFidelityGP:
         """Mean and variance of level ``level`` (default: the highest) at inputs ``X``."""
         if self.gp is None:
             raise RuntimeError("fit the model before predicting")
-        level = self.n_levels - 1 if level is None else level
-        X = as_2d(X)
+        level = _check_level(level, self.n_levels)
+        X = _check_inputs(X, self.n_inputs)
         Xl = np.hstack([X, np.full((len(X), 1), level)])
         return self.gp.predict(Xl, include_noise=include_noise)
 
@@ -255,33 +272,40 @@ class NonlinearMultiFidelityGP:
             self._eps.append(rng.standard_normal(self.n_samples))
         return self
 
-    def predict(self, X, level: int | None = None, include_noise: bool = False):
-        """Mean and variance of level ``level`` (default: the highest) at inputs ``X``.
+    def predict_components(self, X, level: int | None = None):
+        """Monte-Carlo components of the latent prediction of level ``level`` (default: the highest).
 
-        Level 0 is an ordinary GP. For level t >= 1, S samples of f_{t-1}(x) are drawn (with fixed
-        standard-normal numbers, so predictions are deterministic once fitted), level t is evaluated
-        at [x, sample] for each, and the results are combined by the law of total variance:
-            mean = average of the S means,  var = average of the S variances + variance of the S means.
+        Level 0 is an ordinary GP (one component). For level t >= 1, S samples of f_{t-1}(x) are
+        drawn with fixed standard-normal numbers (so predictions are deterministic once fitted), and
+        level t is evaluated at [x, sample] for each. Returns (means, variances), both S x n: the
+        predictive distribution is the equal-weight mixture of the S Gaussians.
         """
         if not self.gps:
             raise RuntimeError("fit the model before predicting")
-        level = self.n_levels - 1 if level is None else level
-        if not 0 <= level < self.n_levels:
-            raise ValueError(f"level must be between 0 and {self.n_levels - 1}")
-        X = as_2d(X)
+        level = _check_level(level, self.n_levels)
+        X = _check_inputs(X, self.n_inputs)
         mean, var = self.gps[0].predict(X)
-        if level > 0:
-            samples = mean[None, :] + np.sqrt(var)[None, :] * self._eps[0][:, None]  # S x n
-            for t in range(1, level + 1):
-                means = np.empty_like(samples)
-                variances = np.empty_like(samples)
-                for s in range(samples.shape[0]):
-                    means[s], variances[s] = self.gps[t].predict(np.hstack([X, samples[s][:, None]]))
-                if t == level:
-                    mean = means.mean(axis=0)
-                    var = variances.mean(axis=0) + means.var(axis=0)
-                else:
-                    samples = means + np.sqrt(variances) * self._eps[t][:, None]
+        means, variances = mean[None, :], var[None, :]
+        samples = mean[None, :] + np.sqrt(var)[None, :] * self._eps[0][:, None]  # S x n
+        for t in range(1, level + 1):
+            means = np.empty_like(samples)
+            variances = np.empty_like(samples)
+            for s in range(samples.shape[0]):
+                means[s], variances[s] = self.gps[t].predict(np.hstack([X, samples[s][:, None]]))
+            samples = means + np.sqrt(variances) * self._eps[t][:, None]
+        return means, variances
+
+    def predict(self, X, level: int | None = None, include_noise: bool = False):
+        """Mean and variance of level ``level`` (default: the highest) at inputs ``X``.
+
+        The first two moments of the Monte-Carlo mixture (``predict_components``), by the law of
+        total variance: mean = average of the S means, var = average of the S variances + variance
+        of the S means. ``include_noise`` adds the noise variance of that level.
+        """
+        level = _check_level(level, self.n_levels) if self.gps else level
+        means, variances = self.predict_components(X, level)
+        mean = means.mean(axis=0)
+        var = variances.mean(axis=0) + means.var(axis=0)
         if include_noise:
-            var = var + self.gps[level].noise.diag(X)
+            var = var + self.gps[level].noise.diag(mean[:, None])
         return mean, var

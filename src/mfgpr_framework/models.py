@@ -73,7 +73,8 @@ class PowerCurveModel:
         """Mean and standard deviation (kW) of the high-fidelity output at inputs ``x``.
 
         ``include_noise=True`` (default) gives the predictive distribution of a measured value;
-        ``False`` gives the distribution of the latent power curve f(x) (Eq. 5).
+        ``False`` gives the distribution of the latent power curve f(x) (Eq. 5). For the nonlinear
+        model these are the first two moments of a Monte-Carlo mixture (see ``predict_components``).
         """
         if self._model is None:
             raise RuntimeError("fit the model before predicting")
@@ -115,6 +116,19 @@ class NonlinearMFGPR(PowerCurveModel):
 
     def _predict_scaled(self, X, include_noise):
         return self._model.predict(X, include_noise=include_noise)
+
+    def predict_components(self, x, include_noise: bool = True):
+        """Monte-Carlo mixture components (kW): means and standard deviations, both S x n.
+
+        The predictive distribution is the equal-weight mixture of the S Gaussians N(means[s], stds[s]**2);
+        ``include_noise`` adds the high-fidelity noise variance to every component.
+        """
+        if self._model is None:
+            raise RuntimeError("fit the model before predicting")
+        means, variances = self._model.predict_components(as_2d(x))
+        if include_noise:
+            variances = variances + self._model.gps[-1].noise.variance
+        return means * self.scale, np.sqrt(variances) * self.scale
 
 
 def make_model(kind: str, options: ModelOptions | None = None) -> PowerCurveModel:

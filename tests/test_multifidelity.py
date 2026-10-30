@@ -114,3 +114,28 @@ def test_wrappers_scale_outputs(small_options):
         StandardGPR().predict([1.0])
     with pytest.raises(ValueError):
         StandardGPR(ModelOptions(output_scale=-1)).fit(levels)
+
+
+def test_prediction_input_and_level_checks():
+    rng = np.random.default_rng(0)
+    X0, X1 = rng.uniform(0, 1, (20, 2)), rng.uniform(0, 1, (8, 2))
+    levels = [(X0, X0.sum(axis=1)), (X1, 2 * X1.sum(axis=1))]
+    for model in (LinearMultiFidelityGP().fit(levels, restarts=0), NonlinearMultiFidelityGP(n_samples=5).fit(levels, restarts=0)):
+        with pytest.raises(ValueError):
+            model.predict([[0.3]])            # one column instead of two
+        for bad in (-1, 2, 0.9, True):
+            with pytest.raises(ValueError):
+                model.predict(X1, level=bad)
+        mean, var = model.predict(X1, level=np.int64(0))
+        assert mean.shape == (8,)
+
+
+def test_mixture_components_match_moments():
+    levels, _ = _benchmark()
+    model = NonlinearMFGPR(ModelOptions(restarts=1, n_samples=30, seed=0)).fit(levels)
+    xs = np.linspace(0, 1, 15)
+    means, stds = model.predict_components(xs)
+    assert means.shape == stds.shape == (30, 15)
+    mean, std = model.predict(xs)
+    np.testing.assert_allclose(means.mean(axis=0), mean, rtol=1e-10, atol=1e-12)
+    np.testing.assert_allclose(np.sqrt((stds**2).mean(axis=0) + means.var(axis=0)), std, rtol=1e-10)

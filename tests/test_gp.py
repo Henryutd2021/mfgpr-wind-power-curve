@@ -62,3 +62,40 @@ def test_errors():
         gp.fit(X, np.r_[y[:-1], np.nan])
     with pytest.raises(ValueError):
         gp.fit(X, y[:-1])
+
+
+def test_trial_likelihood_leaves_fitted_model_unchanged():
+    X, y = _data()
+    gp = GaussianProcess(RBF([0], 1.0, 1.0), GaussianNoise(0.1)).fit(X, y, restarts=1, seed=0)
+    before = gp.predict(X[:5])
+    theta = gp.theta.copy()
+    gp.neg_log_marginal_likelihood(theta + 2.0)
+    np.testing.assert_array_equal(gp.theta, theta)
+    for a, b in zip(before, gp.predict(X[:5])):
+        np.testing.assert_allclose(a, b)
+
+
+def test_changed_parameters_are_refactorised_before_predicting():
+    X, y = _data()
+    gp = GaussianProcess(RBF([0], 1.0, 1.0), GaussianNoise(0.1)).fit(X, y, optimize=False)
+    gp.kernel.theta = gp.kernel.theta + 0.5
+    reference = GaussianProcess(RBF([0], np.exp(0.5), np.exp(0.5)), GaussianNoise(0.1)).fit(X, y, optimize=False)
+    for a, b in zip(gp.predict(X[:4]), reference.predict(X[:4])):
+        np.testing.assert_allclose(a, b, rtol=1e-10)
+
+
+def test_optimum_respects_bounds_for_tiny_outputs():
+    X, _ = _data()
+    y = 1e-9 * np.sin(X[:, 0])
+    gp = GaussianProcess(RBF([0], 1.0, 1.0), GaussianNoise(1.0)).fit(X, y, restarts=1, seed=0)
+    for t, (lo, hi) in zip(gp.theta, gp.bounds()):
+        assert lo - 1e-12 <= t <= hi + 1e-12
+
+
+def test_prediction_input_checks():
+    X, y = _data()
+    gp = GaussianProcess(RBF([0], 1.0, 1.0)).fit(X, y, optimize=False)
+    with pytest.raises(ValueError):
+        gp.predict(np.zeros((2, 2)))
+    with pytest.raises(ValueError):
+        gp.predict(np.array([[np.nan]]))

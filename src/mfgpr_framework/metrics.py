@@ -3,7 +3,9 @@
 Deterministic metrics compare a point estimate x_hat with actual values x (Eqs. 13-17).
 Probabilistic metrics take a Gaussian predictive distribution N(mean, std**2) per record:
 pinball loss (Eq. 18), sharpness (Eq. 19), reliability (Eq. 20), and two curves over nominal
-proportions (central-interval width and observed coverage).
+proportions (central-interval width and observed coverage). For the nonlinear multi-fidelity model
+this Gaussian matches the first two moments of its Monte-Carlo mixture; ``mixture_cdf`` with
+``reliability_numeric`` evaluates Eq. (20) on the mixture itself.
 """
 from __future__ import annotations
 
@@ -73,23 +75,36 @@ def deterministic_metrics(actual, predicted, x_max: float, min_actual: float = 0
 def _gaussian(y, mean, std):
     y = np.asarray(y, dtype=float).ravel()
     mean = np.asarray(mean, dtype=float).ravel()
-    std = np.asarray(std, dtype=float).ravel()
+    std = _std(std)
     if not (y.shape == mean.shape == std.shape) or y.size == 0:
         raise ValueError("y, mean and std must have the same, non-zero length")
-    if np.any(std <= 0):
-        raise ValueError("std must be positive")
+    if not (np.all(np.isfinite(y)) and np.all(np.isfinite(mean))):
+        raise ValueError("y and mean must be finite")
     return y, mean, std
+
+
+def _std(std):
+    std = np.asarray(std, dtype=float).ravel()
+    if not np.all(np.isfinite(std)) or np.any(std <= 0):
+        raise ValueError("std must be positive and finite")
+    return std
+
+
+def _probability(p, name):
+    if not (np.isfinite(p) and 0 < p < 1):
+        raise ValueError(f"{name} must be in (0, 1)")
+    return float(p)
 
 
 def gaussian_quantile(mean, std, tau):
     """tau-quantile of N(mean, std**2)."""
-    if not 0 < tau < 1:
-        raise ValueError("tau must be in (0, 1)")
-    return np.asarray(mean, dtype=float) + np.asarray(std, dtype=float) * norm.ppf(tau)
+    tau = _probability(tau, "tau")
+    return np.asarray(mean, dtype=float) + _std(std) * norm.ppf(tau)
 
 
 def pinball_loss(y, q_pred, tau: float) -> float:
     """Eq. (18), averaged over records: (y - q) tau if y >= q, else (q - y)(1 - tau)."""
+    tau = _probability(tau, "tau")
     y, q = _pair(y, q_pred)
     d = y - q
     return float(np.mean(np.where(d >= 0, d * tau, -d * (1 - tau))))
@@ -107,7 +122,9 @@ def bin_probabilities(mean, std, edges) -> np.ndarray:
     The two outer bins absorb the tails, so each row sums to 1.
     """
     mean = np.asarray(mean, dtype=float).ravel()
-    std = np.asarray(std, dtype=float).ravel()
+    std = _std(std)
+    if mean.shape != std.shape or not np.all(np.isfinite(mean)):
+        raise ValueError("mean must be finite and match std")
     edges = np.asarray(edges, dtype=float)
     if edges.ndim != 1 or len(edges) < 3 or np.any(np.diff(edges) <= 0):
         raise ValueError("edges must be increasing with at least three values")
@@ -119,8 +136,10 @@ def bin_probabilities(mean, std, edges) -> np.ndarray:
 def sharpness(probabilities) -> float:
     """Eq. (19): S = 1/N * sum_i sum_j (p_ij - pbar_j)**2 for an N x M probability matrix."""
     p = np.asarray(probabilities, dtype=float)
-    if p.ndim != 2:
+    if p.ndim != 2 or p.size == 0:
         raise ValueError("probabilities must be an N x M matrix")
+    if not np.all(np.isfinite(p)) or np.any(p < 0) or np.any(p > 1):
+        raise ValueError("probabilities must lie in [0, 1]")
     return float(np.sum((p - p.mean(axis=0)) ** 2) / p.shape[0])
 
 
@@ -149,14 +168,29 @@ def reliability_numeric(y, cdf, grid) -> float:
     return float(np.mean(trapezoid((F - H) ** 2, grid, axis=1)))
 
 
+def mixture_cdf(z, means, stds) -> np.ndarray:
+    """CDF of equal-weight Gaussian mixtures at the points ``z``: an n x len(z) matrix.
+
+    ``means`` and ``stds`` are S x n (S components for each of n records), as returned by
+    ``NonlinearMFGPR.predict_components``. Use with ``reliability_numeric`` for Eq. (20).
+    """
+    means = np.atleast_2d(np.asarray(means, dtype=float))
+    stds = np.atleast_2d(np.asarray(stds, dtype=float))
+    if means.shape != stds.shape or not np.all(np.isfinite(means)) or not np.all(np.isfinite(stds)) or np.any(stds <= 0):
+        raise ValueError("means and stds must be finite S x n arrays of the same shape, stds > 0")
+    z = np.asarray(z, dtype=float).ravel()
+    return norm.cdf((z[None, None, :] - means[:, :, None]) / stds[:, :, None]).mean(axis=0)
+
+
 def interval_width(std, nominal) -> float:
     """Mean width of the central prediction interval with probability ``nominal``."""
-    std = np.asarray(std, dtype=float).ravel()
-    return float(np.mean(2 * norm.ppf(0.5 + nominal / 2) * std))
+    nominal = _probability(nominal, "nominal")
+    return float(np.mean(2 * norm.ppf(0.5 + nominal / 2) * _std(std)))
 
 
 def interval_coverage(y, mean, std, nominal) -> float:
     """Share of records inside the central prediction interval with probability ``nominal``."""
+    nominal = _probability(nominal, "nominal")
     y, mean, std = _gaussian(y, mean, std)
     half = norm.ppf(0.5 + nominal / 2) * std
     return float(np.mean(np.abs(y - mean) <= half))

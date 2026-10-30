@@ -30,6 +30,8 @@ def _parser():
     r.add_argument("--n-turbines", type=int, default=None, help="random selection; default: all turbines")
     r.add_argument("--restarts", type=int, default=5)
     r.add_argument("--n-samples", type=int, default=100, help="Monte-Carlo samples of the nonlinear model")
+    r.add_argument("--mape-min-actual", type=float, default=0.0,
+                   help="Eq. 17 uses records with |power| above this value (kW); default 0")
     r.add_argument("--seed", type=int, default=0)
     return p
 
@@ -43,7 +45,7 @@ def main(argv=None) -> int:
         return 0
     records, curve = read_inputs(args.directory)
     config = ExperimentConfig(n_high=args.n_high, n_low=args.n_low, models=tuple(args.models),
-                              n_turbines=args.n_turbines, seed=args.seed,
+                              n_turbines=args.n_turbines, seed=args.seed, mape_min_actual=args.mape_min_actual,
                               model_options=ModelOptions(restarts=args.restarts, n_samples=args.n_samples,
                                                          seed=args.seed))
     result = run_experiment(records, curve, config)

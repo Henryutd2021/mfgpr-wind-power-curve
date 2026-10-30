@@ -58,6 +58,6 @@ The same configuration object covers the usual variations of such a study:
 | Low-fidelity source | another theoretical or reference curve | another `power_curve.csv` |
 | Turbine sample | which turbines are evaluated | `turbines=(…)`, `n_turbines`, `seed` |
 | Evaluation period | records used for evaluation | `eval_records` |
-| Robustness of the fit | restarts, Monte Carlo samples, random seed | `ModelOptions(restarts, n_samples, seed)` |
+| Robustness of the fit | restarts, Monte Carlo samples, random seed | `ModelOptions(restarts=…, n_samples=…, seed=…)` |
 
 A loop over configurations, with `result.summary()` collected per run, gives a sensitivity table; `examples/sensitivity.py` does this for the training size and the KDE bandwidth on synthetic data.

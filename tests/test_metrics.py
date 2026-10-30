@@ -58,3 +58,31 @@ def test_interval_curves_for_calibrated_forecasts():
         assert row["mean_width"] == pytest.approx(2 * norm.ppf(0.5 + row["nominal"] / 2) * 2.0)
     with pytest.raises(ValueError):
         mt.interval_coverage(y, mean, -std, 0.5)
+
+
+def test_domain_checks():
+    y = np.array([1.0, 2.0])
+    with pytest.raises(ValueError):
+        mt.pinball_loss(y, y, -1.0)
+    with pytest.raises(ValueError):
+        mt.gaussian_quantile(y, [1.0, 1.0], 1.0)
+    with pytest.raises(ValueError):
+        mt.bin_probabilities(y, [1.0, -1.0], [0.0, 1.0, 2.0])
+    with pytest.raises(ValueError):
+        mt.interval_width([1.0, 1.0], -0.5)
+    with pytest.raises(ValueError):
+        mt.interval_coverage(y, y, [1.0, 1.0], 1.5)
+    with pytest.raises(ValueError):
+        mt.reliability_gaussian([np.nan, 1.0], y, [1.0, 1.0])
+    with pytest.raises(ValueError):
+        mt.sharpness([[1.5, -0.5]])
+
+
+def test_mixture_cdf():
+    z = np.linspace(-3, 3, 7)
+    single = mt.mixture_cdf(z, [[0.5, -1.0]], [[1.0, 2.0]])
+    np.testing.assert_allclose(single, norm.cdf((z[None, :] - np.array([[0.5], [-1.0]])) / np.array([[1.0], [2.0]])))
+    two = mt.mixture_cdf(z, [[0.0], [2.0]], [[1.0], [1.0]])
+    np.testing.assert_allclose(two[0], 0.5 * (norm.cdf(z) + norm.cdf(z - 2.0)))
+    with pytest.raises(ValueError):
+        mt.mixture_cdf(z, [[0.0]], [[0.0]])

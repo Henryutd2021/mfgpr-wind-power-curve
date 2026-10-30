@@ -110,6 +110,7 @@ class GaussianProcess:
         self.y = None
         self._chol = None
         self._alpha = None
+        self._factor_theta = None  # parameters at the last factorisation
 
     # parameters ---------------------------------------------------------------------------------
     @property
@@ -135,9 +136,17 @@ class GaussianProcess:
         return self.kernel.K(X) + np.diag(self.noise.diag(X) + self.jitter)
 
     def neg_log_marginal_likelihood(self, theta=None, X=None, y=None, gradient: bool = True):
-        """-log p(y | X, theta) and its gradient with respect to ``theta``."""
+        """-log p(y | X, theta) and its gradient with respect to ``theta``.
+
+        Evaluating at a trial ``theta`` leaves the model's own parameters unchanged.
+        """
         if theta is not None:
+            saved = self.theta
             self.theta = theta
+            try:
+                return self.neg_log_marginal_likelihood(None, X, y, gradient)
+            finally:
+                self.theta = saved
         X = self.X if X is None else X
         y = self.y if y is None else y
         K = self._covariance(X)
@@ -160,8 +169,9 @@ class GaussianProcess:
     def fit(self, X, y, restarts: int = 5, seed=None, optimize: bool = True):
         """Store the training data and maximise the marginal likelihood from ``restarts`` + 1 starts.
 
-        The first start is the current ``theta``; the others perturb it with standard-normal noise
-        on the log scale (seeded by ``seed``). The best optimum is kept.
+        The first start is the current ``theta`` (moved inside the bounds); the others add
+        standard-normal noise to it (log-parameters on the log scale, scaling factors on their own
+        scale), seeded by ``seed``, and are moved inside the bounds too. The best optimum is kept.
         """
         X = np.asarray(X, dtype=float)
         y = np.asarray(y, dtype=float).ravel()
@@ -175,7 +185,7 @@ class GaussianProcess:
             bounds = self.bounds()
             lo = np.array([b[0] for b in bounds])
             hi = np.array([b[1] for b in bounds])
-            start = self.theta
+            start = np.clip(self.theta, lo, hi)
             best = (self.neg_log_marginal_likelihood(start, gradient=False), start)
             for r in range(restarts + 1):
                 x0 = start if r == 0 else np.clip(start + rng.standard_normal(len(start)), lo, hi)
@@ -191,21 +201,36 @@ class GaussianProcess:
         K = self._covariance(self.X)
         self._chol = cho_factor(K, lower=True, check_finite=False)
         self._alpha = cho_solve(self._chol, self.y, check_finite=False)
+        self._factor_theta = self.theta
 
     @property
     def log_marginal_likelihood(self) -> float:
         return -float(self.neg_log_marginal_likelihood(gradient=False))
 
     # prediction ---------------------------------------------------------------------------------
-    def predict(self, Xnew, include_noise: bool = False):
-        """Posterior mean and variance (Eqs. 4-5) at ``Xnew``; optionally plus the noise variance."""
-        if self._chol is None:
+    def predict(self, Xnew, include_noise: bool = False, chunk: int = 2048):
+        """Posterior mean and variance (Eqs. 4-5) at ``Xnew``; optionally plus the noise variance.
+
+        If the parameters were changed after fitting, the covariance is factorised again first.
+        Rows are processed in chunks of ``chunk`` to bound memory.
+        """
+        if self.X is None:
             raise RuntimeError("fit the model before predicting")
+        if self._chol is None or not np.array_equal(self.theta, self._factor_theta):
+            self._factorize()
         Xnew = np.asarray(Xnew, dtype=float)
-        Ks = self.kernel.K(Xnew, self.X)
-        mean = Ks @ self._alpha
-        v = cho_solve(self._chol, Ks.T, check_finite=False)
-        var = self.kernel.Kdiag(Xnew) - np.einsum("ij,ji->i", Ks, v)
+        if Xnew.ndim != 2 or Xnew.shape[1] != self.X.shape[1]:
+            raise ValueError(f"inputs must be an n x {self.X.shape[1]} array")
+        if not np.all(np.isfinite(Xnew)):
+            raise ValueError("inputs must be finite")
+        mean = np.empty(len(Xnew))
+        var = np.empty(len(Xnew))
+        for a in range(0, len(Xnew), chunk):
+            Xc = Xnew[a:a + chunk]
+            Ks = self.kernel.K(Xc, self.X)
+            mean[a:a + chunk] = Ks @ self._alpha
+            v = cho_solve(self._chol, Ks.T, check_finite=False)
+            var[a:a + chunk] = self.kernel.Kdiag(Xc) - np.einsum("ij,ji->i", Ks, v)
         var = np.maximum(var, 0.0)
         if include_noise:
             var = var + self.noise.diag(Xnew)

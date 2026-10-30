@@ -120,8 +120,15 @@ class RBF(Kernel):
         return grads if self.fixed_variance else [K] + grads
 
 
+def _leaves(kernel: Kernel) -> list:
+    return [leaf for part in kernel.parts for leaf in _leaves(part)] if isinstance(kernel, _Combination) else [kernel]
+
+
 class _Combination(Kernel):
     def __init__(self, left: Kernel, right: Kernel):
+        ids = [id(k) for k in _leaves(left) + _leaves(right)]
+        if len(ids) != len(set(ids)):
+            raise ValueError("a kernel instance can appear only once in a sum or product; use separate instances")
         self.parts = (left, right)
 
     @property

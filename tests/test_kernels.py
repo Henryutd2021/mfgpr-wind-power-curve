@@ -59,3 +59,11 @@ def test_invalid_parameters():
         RBF([0], variance=-1.0)
     with pytest.raises(ValueError):
         RBF([], 1.0)
+
+
+def test_repeated_kernel_instance_is_rejected():
+    k = RBF([0], 1.0, 1.0)
+    with pytest.raises(ValueError):
+        k + k
+    with pytest.raises(ValueError):
+        (k * RBF([1], 1.0, 1.0)) + k
