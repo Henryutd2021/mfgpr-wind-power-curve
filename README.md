@@ -41,7 +41,7 @@ The complete method, with the paper's equation numbers, is in [docs/method.md](d
 ```bash
 git clone https://github.com/Henryutd2021/mfgpr-wind-power-curve.git
 cd mfgpr-wind-power-curve
-python -m venv .venv && source .venv/bin/activate      # Python 3.10 or newer (tested with 3.12)
+python3 -m venv .venv && source .venv/bin/activate    # needs Python 3.10+ (check: python3 --version); if older, use e.g. python3.12
 pip install -e ".[test]"
 python examples/minimal.py                              # synthetic wind farm
 pytest
