@@ -34,7 +34,7 @@ The complete method, with the paper's equation numbers, is in [docs/method.md](d
 | [`docs/architecture.md`](docs/architecture.md) | data flow, modules, model parameters, size and run time, output tables, tests |
 | [`src/mfgpr_framework/`](src/mfgpr_framework/) | the implementation (NumPy, SciPy, pandas; no other dependency) |
 | [`examples/`](examples/) | `minimal.py` (the experiment design, a few seconds), `probabilistic.py` (intervals and probabilistic metrics), `sensitivity.py` (training size and bandwidth), `benchmark_function.py` (linear versus nonlinear fusion on an analytic test function); all on synthetic data |
-| [`tests/`](tests/) | 52 tests: equations against direct formulas, exact gradients, model behaviour, data checks, experiment, command line |
+| [`tests/`](tests/) | 53 tests: equations against direct formulas, exact gradients, model behaviour, data checks, experiment, command line |
 
 ## Quick start
 

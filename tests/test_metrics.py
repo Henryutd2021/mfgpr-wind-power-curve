@@ -99,3 +99,12 @@ def test_quantile_shape_and_non_finite_inputs():
         mt.bin_probabilities([0.0], [1.0], [0.0, np.nan, 2.0])
     with pytest.raises(ValueError):
         mt.rmse([1.0, np.inf], [1.0, 1.0])
+
+
+def test_scalar_broadcasting_and_infinite_outer_edges():
+    np.testing.assert_allclose(mt.gaussian_quantile([0.0, 1.0], 1.0, 0.5), [0.0, 1.0])
+    with pytest.raises(ValueError):
+        mt.gaussian_quantile([0.0, 1.0], [1.0, 1.0, 1.0], 0.5)
+    np.testing.assert_allclose(mt.bin_probabilities([0.0], [1.0], [-np.inf, 0.0, np.inf]), [[0.5, 0.5]])
+    with pytest.raises(ValueError):
+        mt.bin_probabilities([0.0], [1.0], [0.0, np.inf, 5.0])

@@ -101,10 +101,12 @@ def _probability(p, name):
 def gaussian_quantile(mean, std, tau):
     """tau-quantile of N(mean, std**2)."""
     tau = _probability(tau, "tau")
-    mean = np.asarray(mean, dtype=float)
-    std = _std(std)
-    if mean.shape != std.shape or not np.all(np.isfinite(mean)):
-        raise ValueError("mean must be finite and have the shape of std")
+    try:
+        mean, std = np.broadcast_arrays(np.asarray(mean, dtype=float), _std(std))
+    except ValueError:
+        raise ValueError("mean and std must have the same or broadcastable shapes") from None
+    if not np.all(np.isfinite(mean)):
+        raise ValueError("mean must be finite")
     return mean + std * norm.ppf(tau)
 
 
@@ -132,8 +134,9 @@ def bin_probabilities(mean, std, edges) -> np.ndarray:
     if mean.shape != std.shape or not np.all(np.isfinite(mean)):
         raise ValueError("mean must be finite and match std")
     edges = np.asarray(edges, dtype=float)
-    if edges.ndim != 1 or len(edges) < 3 or not np.all(np.isfinite(edges)) or np.any(np.diff(edges) <= 0):
-        raise ValueError("edges must be increasing with at least three values")
+    if (edges.ndim != 1 or len(edges) < 3 or np.any(np.isnan(edges)) or not np.all(np.isfinite(edges[1:-1]))
+            or np.any(np.diff(edges) <= 0)):
+        raise ValueError("edges must be increasing with at least three values; only the outer two may be infinite")
     cdf = norm.cdf((edges[None, 1:-1] - mean[:, None]) / std[:, None])
     cdf = np.hstack([np.zeros((len(mean), 1)), cdf, np.ones((len(mean), 1))])
     return np.diff(cdf, axis=1)
