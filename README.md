@@ -1,5 +1,7 @@
 # MF-GPR framework: probabilistic wind power curves from a theoretical curve and measured data
 
+Author: [Honglin Li](https://henryutd2021.github.io/)
+
 A documented, runnable implementation of the method in:
 
 > Honglin Li, Cong Feng and Jie Zhang. **A Multi-Fidelity Gaussian Process Regression Method for Probabilistic Wind Farm Power Curve Estimation.** *Proceedings of the ASME 2023 International Design Engineering Technical Conferences and Computers and Information in Engineering Conference (IDETC/CIE 2023)*, Volume 3A, V03AT03A034. [doi:10.1115/DETC2023-114762](https://doi.org/10.1115/DETC2023-114762)
